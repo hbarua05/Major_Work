@@ -20,19 +20,23 @@ PVector missileLocation;
 float missileSpeed;
 boolean missileShot;
 
+int points;
+
 /*
   Driver code
  */
 void setup() {
   size(500, 500);
-  
+
+  points = 0;
+
   currentLevel = 0;
   gameOver = false;
-  
-  
+
+
   playerCenter = new PVector(50, 50);
   playerWidth = 40;
-  playerHeight = 40; 
+  playerHeight = 40;
   pixelsToMove = 5;
 
   numMoonsInLevel = new int[] {3, 4, 6};
@@ -53,40 +57,44 @@ void setup() {
 
 void draw() {
   background(0);
+  if (!gameOver) {
+    showPoints();
+  }
+
   animateStars();
-  
+
   if (!gameOver) {
     drawMoons();
     drawMissile();
     drawPlayer(playerCenter.x, playerCenter.y);
-    
+
     if (allMoonsInCurrentLevelHit()) {
       levelUp();
     }
-    
+
     if (anyMoonHitShipOrEdge()) {
       gameOver = true;
     }
   } else {
-    textMode(CENTER);
+    textSize(128);
+    textAlign(CENTER);
+    fill(144);
     text("Game", width/2, height/2);
   }
-  
 }
 
 void keyPressed() {
   movePlayer(key);
-  
+
   if (key == ' ' && !missileShot) {
     initializeMissile();
-    
   }
 }
 
 /*
   Utility functions for the levels
  */
- 
+
 void levelUp() {
   if (currentLevel < 2) {
     currentLevel++;
@@ -95,7 +103,17 @@ void levelUp() {
   } else {
     gameOver = true;
   }
-  
+}
+
+/*
+  Utility functions for points
+ */
+
+void showPoints() {
+  textSize(128);
+  textAlign(CENTER);
+  fill(25);
+  text(points, width/2, height/2);
 }
 
 /*
@@ -115,7 +133,7 @@ void movePlayer(char keyName) {
   // Moving up
   if (keyName == 'w' && bottomY - pixelsToMove >= playerHeight/2) {
     playerCenter.y -= pixelsToMove;
-  } 
+  }
   // Moving down
   else if (keyName == 's' && topY + pixelsToMove <= height - playerHeight/2) {
     playerCenter.y += pixelsToMove;
@@ -125,7 +143,7 @@ void movePlayer(char keyName) {
 /*
   Utility functions for the moon
  */
- 
+
 void initializeMoons() {
   for (int i = 0; i < numMoonsInLevel[currentLevel]; i++) {
     moonsCenterLocations[i] = new PVector(random(width*5/6, width), random(0, height));
@@ -134,25 +152,26 @@ void initializeMoons() {
 }
 
 void drawMoon(float x, float y) {
-    strokeWeight(5);
-    stroke(255, 0, 0);
-    fill(200, 0, 0);
-    circle(x, y, width/4);
+  strokeWeight(5);
+  stroke(255, 0, 0);
+  fill(200, 0, 0);
+  circle(x, y, width/4);
 }
 
 void drawMoons() {
   for (int i = 0; i < numMoonsInLevel[currentLevel]; i++) {
-    if (!missileHitMoon(i) && !moonsHitPreviously[i]) {
+    if (!missileHitMoon(missileLocation, i) && !moonsHitPreviously[i]) {
       PVector currentMoonLocation = moonsCenterLocations[i];
       drawMoon(currentMoonLocation.x, currentMoonLocation.y);
     }
-    
-    if (missileHitMoon(i)) {
+
+    if (missileHitMoon(missileLocation, i)) {
       moonsHitPreviously[i] = true;
+      points++;
       resetMissile();
     }
   }
-  
+
   moveMoons();
 }
 
@@ -184,9 +203,9 @@ boolean anyMoonHitShipOrEdge() {
   return false;
 }
 
-/* 
-  Utility Functions for the missile
-*/
+/*
+ Utility Functions for the missile
+ */
 
 void initializeMissile() {
   missileShot = true;
@@ -215,11 +234,11 @@ void resetMissile() {
   missileShot = false;
 }
 
-boolean missileHitMoon(int index) {
+boolean missileHitMoon(PVector missileLocation, int index) {
   boolean moonHitPreviously = moonsHitPreviously[index];
-  if (missileLocation != null && ! moonHitPreviously) { 
+  if (missileLocation != null && ! moonHitPreviously) {
     PVector moonCenter = moonsCenterLocations[index];
-    return dist(missileLocation.x, missileLocation.y, moonCenter.x, moonCenter.y) < 5/2 + width/8;
+    return dist(missileLocation.x, missileLocation.y, moonCenter.x, moonCenter.y) < width/8;
   } else {
     return false;
   }
