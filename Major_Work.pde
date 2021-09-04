@@ -1,4 +1,7 @@
-int currentLevel; //<>//
+float startButtonWidth = 200, startButtonHeight = 50; //<>//
+
+int currentLevel;
+boolean startButtonClicked;
 boolean gameOver;
 
 float playerWidth;
@@ -27,12 +30,12 @@ int points;
  */
 void setup() {
   size(500, 500);
-
+  
+  startButtonClicked = false;
   points = 0;
-
+  
   currentLevel = 0;
   gameOver = false;
-
 
   playerCenter = new PVector(50, 50);
   playerWidth = 40;
@@ -57,13 +60,18 @@ void setup() {
 
 void draw() {
   background(0);
-  if (!gameOver) {
+
+  if (startButtonClicked && !gameOver) {
     showPoints();
   }
 
   animateStars();
 
-  if (!gameOver) {
+  if (!startButtonClicked) {
+    drawStartButton();
+  }
+
+  if (startButtonClicked && !gameOver) {
     drawMoons();
     drawMissile();
     drawPlayer(playerCenter.x, playerCenter.y);
@@ -75,7 +83,7 @@ void draw() {
     if (anyMoonHitShipOrEdge()) {
       gameOver = true;
     }
-  } else {
+  } else if (gameOver) {
     textSize(128);
     textAlign(CENTER);
     fill(144);
@@ -84,13 +92,63 @@ void draw() {
 }
 
 void keyPressed() {
-  movePlayer(key);
+  if (startButtonClicked) {
+    movePlayer(key);
 
-  if (key == ' ' && !missileShot) {
-    initializeMissile();
+    if (key == ' ' && !missileShot) {
+      initializeMissile();
+    }
   }
 }
 
+void mouseReleased() {
+  if (!startButtonClicked) {
+    boolean mouseXInButton = dist(mouseX, 0, width/2, 0) < startButtonWidth/2;
+    boolean mouseYInButton = dist(0, mouseY, 0, height/2) < startButtonHeight/2;
+
+    startButtonClicked = mouseXInButton && mouseYInButton;
+  }
+}
+
+
+
+void startGame() {
+  startButtonClicked = true;
+}
+
+void drawStartButton() {
+  boolean mouseXInButton = dist(mouseX, 0, width/2, 0) < startButtonWidth/2;
+  boolean mouseYInButton = dist(0, mouseY, 0, height/2) < startButtonHeight/2;
+
+  // Setting the fill and stroke of button based on hover
+  if (mouseXInButton && mouseYInButton) {
+    strokeWeight(2);
+    fill(255);
+  } else {
+    strokeWeight(2);
+    stroke(255);
+    fill(0, 0, 0, 200);
+  }
+
+  // The button rect
+  rectMode(CENTER);
+  rect(width/2, height/2, startButtonWidth, startButtonHeight, 5);
+
+
+  // The text in button
+  textSize(30);
+  textAlign(CENTER, CENTER);
+
+  // Setting the text color of button based on hover
+  strokeWeight(5);
+  if (mouseXInButton && mouseYInButton) {
+    fill(0);
+  } else {
+    fill(255);
+  }
+
+  text("Start Game", width/2, height/2 - 3);
+}
 /*
   Utility functions for the levels
  */
@@ -255,17 +313,26 @@ void initializeStars() {
   }
 }
 
-float pixelsForParallaxEffect(float x) {
-  return (5/ (pow(0.5 * x, 2)) - 0.05);
+float pixelsForParallaxEffect(float z) {
+  // Returning the pixels to move based on the z-distance of star
+  return (5/ (pow(0.5 * z, 2)) - 0.05);
 }
 
 void animateStars() {
   for (int i = 0; i < numStars; i++) {
     PVector starPosition = starsPosition[i];
     float starDistance = starsDistance[i];
+
+    strokeWeight(0.5);
+    stroke(255);
     fill(255, 255, 255, 150);
-    circle(starPosition.x, starPosition.y, 750 / (starDistance * starDistance));
+
+    ellipse(starPosition.x, starPosition.y, 750 / (starDistance * starDistance), 750 / (starDistance * starDistance));
+
+    // Moving the x of star based on z-distance for parallaxEffect
     starsPosition[i].x = (starsPosition[i].x - pixelsForParallaxEffect(starDistance));
+
+    // Done to reset the start back to right side of screen
     if (starsPosition[i].x < 0) {
       starsPosition[i].x += width;
       starsPosition[i].y = random(0, height);
