@@ -30,10 +30,10 @@ int points;
  */
 void setup() {
   size(500, 500);
-  
+
   startButtonClicked = false;
   points = 0;
-  
+
   currentLevel = 0;
   gameOver = false;
 
@@ -59,14 +59,14 @@ void setup() {
 }
 
 void draw() {
-  background(0);
+  background(#050608);
 
   if (startButtonClicked && !gameOver) {
     showPoints();
   }
 
   animateStars();
-
+  
   if (!startButtonClicked) {
     drawStartButton();
   }
@@ -168,10 +168,10 @@ void levelUp() {
  */
 
 void showPoints() {
-  textSize(128);
+  textSize(300);
   textAlign(CENTER);
   fill(25);
-  text(points, width/2, height/2);
+  text(points, width/2, 320);
 }
 
 /*
@@ -210,16 +210,29 @@ void initializeMoons() {
 }
 
 void drawMoon(float x, float y) {
-  strokeWeight(5);
-  stroke(255, 0, 0);
-  fill(200, 0, 0);
+  //strokeWeight(5);
+  //stroke(255, 0, 0);
+  //fill(200, 0, 0);
+  //circle(x, y, width/4);
+  strokeWeight(2);
+  stroke(#31190A);
+  fill(#5f4e43);
   circle(x, y, width/4);
+
+  fill(#342A24);
+  strokeWeight(0);
+  circle(x + 10, y + 10, 30);
+  circle(x - 45, y + 20, 20);
+  circle(x + 50, y - 20, 10);
+  circle(x - 20, y - 30, 15);
+  circle(x + 10, y + 50, 5);
 }
 
 void drawMoons() {
   for (int i = 0; i < numMoonsInLevel[currentLevel]; i++) {
+    PVector currentMoonLocation = moonsCenterLocations[i];
+
     if (!missileHitMoon(missileLocation, i) && !moonsHitPreviously[i]) {
-      PVector currentMoonLocation = moonsCenterLocations[i];
       drawMoon(currentMoonLocation.x, currentMoonLocation.y);
     }
 
@@ -236,9 +249,12 @@ void drawMoons() {
 
 void moveMoons() {
   for (int i = 0; i < numMoonsInLevel[currentLevel]; i++) {
-    moonsCenterLocations[i].x -= moonSpeed;
+    if (!moonsHitPreviously[i]) {
+      moonsCenterLocations[i].x -= moonSpeed;
+    }
   }
 }
+
 
 boolean allMoonsInCurrentLevelHit() {
   for (int i = 0; i < numMoonsInLevel[currentLevel]; i++) {
@@ -327,7 +343,7 @@ void animateStars() {
     stroke(255);
     fill(255, 255, 255, 150);
 
-    ellipse(starPosition.x, starPosition.y, 750 / (starDistance * starDistance), 750 / (starDistance * starDistance));
+    circle(starPosition.x, starPosition.y, 750 / (starDistance * starDistance));
 
     // Moving the x of star based on z-distance for parallaxEffect
     starsPosition[i].x = (starsPosition[i].x - pixelsForParallaxEffect(starDistance));
