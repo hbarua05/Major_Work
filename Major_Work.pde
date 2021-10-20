@@ -1,4 +1,10 @@
-float startButtonWidth = 200, startButtonHeight = 50; //<>//
+//****************************************************************************//
+//                       COMP1000 MAJOR WORK SUBMISSTION                      //
+//****************************************************************************//
+//                                Hrithik Barua                               //
+//****************************************************************************//
+
+float startButtonWidth = 200, startButtonHeight = 50;
 
 int currentLevel;
 boolean startButtonClicked;
@@ -13,7 +19,9 @@ PVector playerCenter;
 int[] numMoonsInLevel;
 PVector[] moonsCenterLocations;
 boolean[] moonsHitPreviously;
+float[] frameNumberForMoonsHit;
 float moonSpeed;
+float moonDiameter;
 
 int numStars;
 PVector[] starsPosition;
@@ -26,15 +34,17 @@ boolean missileShot;
 
 int points;
 
-/*
-  Driver code
- */
+//****************************************************************************//
+//                                 Driver Code                                //
+//****************************************************************************//
+
 void setup() {
   size(500, 500);
 
   startButtonClicked = false;
   points = 0;
 
+  // currentLevel is 0, 1 or 2
   currentLevel = 0;
   gameWon = false;
   gameOver = false;
@@ -44,9 +54,11 @@ void setup() {
   playerHeight = 40;
   pixelsToMove = 5;
 
+  moonDiameter = width/4;
   numMoonsInLevel = new int[] {3, 4, 6};
   moonsCenterLocations = new PVector[6];
   moonsHitPreviously = new boolean[6];
+  frameNumberForMoonsHit = new float[6];
   moonSpeed = 0.1;
   initializeMoons();
 
@@ -62,7 +74,9 @@ void setup() {
 
 void draw() {
   background(#050608);
-
+  
+  // Although this condition is the same as the one later on
+  // I have add it here so that the points text is behind the stars.
   if (startButtonClicked && !gameOver) {
     showPoints();
   }
@@ -75,8 +89,12 @@ void draw() {
 
   if (startButtonClicked && !gameOver) {
     drawMissile();
-    drawPlayer(playerCenter.x, playerCenter.y);
+    /* drawMoons draws multiple moons and thus it uses the drawMoon func
+       to draw each moon
+    */
+    // drawMoons Function internally uses drawMoon
     drawMoons();
+    drawPlayer(playerCenter.x, playerCenter.y);
 
     if (allMoonsInCurrentLevelHit()) {
       levelUp();
@@ -88,6 +106,7 @@ void draw() {
     }
   } else if (gameOver) {
     if (gameWon) {
+      drawMoonExplosion(random(0, width), random(0, height));
       displayEndScreen("You Won!!");
     } else {
       displayEndScreen("You Lost :(");
@@ -114,9 +133,15 @@ void mouseReleased() {
   }
 }
 
-/* 
-  Utility functions for the start and end of game
-*/
+//****************************************************************************//
+//                             End of Driver Code                             //
+//****************************************************************************//
+
+
+//****************************************************************************//
+//               Utility functions for the Start and End of Game              //
+//****************************************************************************//
+
 void startGame() {
   startButtonClicked = true;
 }
@@ -162,11 +187,12 @@ void displayEndScreen(String result) {
     text(result, width/2, height/2);
 }
 
-/*
-  Utility functions for the levels
-*/
+//****************************************************************************//
+//                       Utility Function for the Levels                      //
+//****************************************************************************//
 
 void levelUp() {
+  // increase level if there are any left, otherwise the game is won
   if (currentLevel < 2) {
     currentLevel++;
     moonSpeed *= 2;
@@ -177,9 +203,9 @@ void levelUp() {
   }
 }
 
-/*
-  Utility functions for points
-*/
+//****************************************************************************//
+//                      Utility Function for the Points                      //
+//****************************************************************************//
 
 void showPoints() {
   textSize(300);
@@ -188,9 +214,9 @@ void showPoints() {
   text(points, width/2, 320);
 }
 
-/*
-  Utility functions for the player
-*/
+//****************************************************************************//
+//                      Utility Functions for the Player                      //
+//****************************************************************************//
 
 void drawPlayer(float x, float y) {
   noStroke();
@@ -208,6 +234,16 @@ void drawPlayer(float x, float y) {
     p3.y = y + playerHeight/4;
    }
   triangle(p1.x, p1.y, p2.x, p2.y, p3.x, p3.y);
+  drawTorchLight(p3.copy().sub(new PVector(x, y)), p3);
+}
+
+void drawTorchLight(PVector directionVector, PVector playerFrontPoint) {
+  PVector end = playerFrontPoint.copy().add(directionVector.copy().normalize().mult(width));
+  strokeWeight(0);
+  color torchLightColor = #FFFF00;
+  stroke(torchLightColor, 10);
+  fill(torchLightColor, 15);
+  triangle(playerFrontPoint.x, playerFrontPoint.y, end.x, end.y + width/2, end.x, end.y - width/2);
 }
 
 void movePlayer(char keyName) {
@@ -224,14 +260,15 @@ void movePlayer(char keyName) {
   }
 }
 
-/*
-  Utility functions for the moon
-*/
+//****************************************************************************//
+//                       Utility Functions for the Moons                      //
+//****************************************************************************//
 
 void initializeMoons() {
   for (int i = 0; i < numMoonsInLevel[currentLevel]; i++) {
     moonsCenterLocations[i] = new PVector(random(width*4/6, width), random(0, height));
     moonsHitPreviously[i] = false;
+    frameNumberForMoonsHit[i] = 0;
   }
 }
 
@@ -240,7 +277,7 @@ void drawMoon(float x, float y) {
   strokeWeight(2);
   stroke(#31190A);
   fill(#5f4e43);
-  circle(x, y, width/4);
+  circle(x, y, moonDiameter);
 
   // The craters on the moon
   fill(#342A24);
@@ -259,6 +296,7 @@ void drawMoons() {
     // check if the missile has hit the moon
     if (missileHitMoon(missileLocation, i)) {
       moonsHitPreviously[i] = true;
+      frameNumberForMoonsHit[i] = frameCount;
       points++;
       resetMissile();
     }
@@ -267,6 +305,10 @@ void drawMoons() {
     // only then draw the moon
     if (!missileHitMoon(missileLocation, i) && !moonsHitPreviously[i]) {
       drawMoon(currentMoonLocation.x, currentMoonLocation.y);
+    } else if (frameCount - frameNumberForMoonsHit[i] < frameRate/5){
+      // here it is guranteed that moon is hit 1/5 seconds ago
+      // so explosion is only show for 1/5 seconds after a certain moon is hit
+      drawMoonExplosion(currentMoonLocation.x, currentMoonLocation.y);
     }
 
   }
@@ -274,6 +316,23 @@ void drawMoons() {
   moveMoons();
 }
 
+void drawMoonExplosion(float x, float y) {
+  color c1 = color(255, 0, 0);
+  color c2 = color(255, 255, 0);
+  for (float theta = 0; theta <= 2 * PI; theta += 0.1) {
+    float len = random(50, 85);
+    strokeWeight(1);
+    gradient_line(c2, c1, x, y, x + len * cos(theta), y + len * sin(theta));
+  }
+}
+
+void gradient_line( color s, color e, float x, float y, float x2, float y2 ) {
+  for ( int i = 0; i < 100; i ++ ) {
+    stroke( lerpColor( s, e, i/100.0) );
+    line( ((100-i)*x + i*x2)/100.0, ((100-i)*y + i*y2)/100.0, 
+      ((100-i-1)*x + (i+1)*x2)/100.0, ((100-i-1)*y + (i+1)*y2)/100.0 );
+  }
+}
 
 void moveMoons() {
   for (int i = 0; i < numMoonsInLevel[currentLevel]; i++) {
@@ -296,18 +355,19 @@ boolean allMoonsInCurrentLevelHit() {
 boolean anyMoonHitShipOrEdge() {
   for (int i = 0; i < numMoonsInLevel[currentLevel]; i++) {
     PVector currentMoonCenter = moonsCenterLocations[i];
-    boolean hitPlayer = dist(playerCenter.x + playerWidth/2, playerCenter.y, currentMoonCenter.x, currentMoonCenter.y) < width/8;
-    boolean hitEdge = currentMoonCenter.x - width/8 < 0;
+    boolean hitPlayer = dist(playerCenter.x + playerWidth/2, playerCenter.y, currentMoonCenter.x, currentMoonCenter.y) < moonDiameter/2;
+    boolean hitEdge = currentMoonCenter.x - moonDiameter/2 < 0;
     if (hitPlayer || hitEdge) {
       return true;
     }
+
   }
   return false;
 }
 
-/*
- Utility Functions for the missile
-*/
+//****************************************************************************//
+//                     Utility Functions for the Missiles                     //
+//****************************************************************************//
 
 void initializeMissile() {
   missileShot = true;
@@ -338,27 +398,28 @@ void resetMissile() {
 
 boolean missileHitMoon(PVector missileLocation, int moonIndex) {
   boolean moonHitPreviously = moonsHitPreviously[moonIndex];
-  if (missileLocation != null && !moonHitPreviously) {
+  if (missileLocation != null && !moonHitPreviously && missileShot) {
     PVector moonCenter = moonsCenterLocations[moonIndex];
-    return dist(missileLocation.x, missileLocation.y, moonCenter.x, moonCenter.y) < width/8;
+    return dist(missileLocation.x, missileLocation.y, moonCenter.x, moonCenter.y) < moonDiameter/2;
   }
   return false;
 }
 
-/*
-  Utility functions for the stars
-*/
+//****************************************************************************//
+//                       Utility Functions for the Stars                      //
+//****************************************************************************//
 
 void initializeStars() {
   for (int i = 0; i < numStars; i++) {
     starsPosition[i] = new PVector(random(0, width), random(0, height));
-    starsDistance[i] = (random(10, 20));
+    starsDistance[i] = (random(10, 50));
   }
 }
 
 float pixelsForParallaxEffect(float z) {
   // Returning the pixels to move based on the z-distance of star
-  return (5/ (pow(0.5 * z, 2)) - 0.05);
+  float starSpeed = 5;
+  return 2 * atan(starSpeed/z);
 }
 
 void animateStars() {
@@ -370,12 +431,13 @@ void animateStars() {
     stroke(255);
     fill(255, 255, 255, 150);
 
-    circle(starPosition.x, starPosition.y, 750 / (starDistance * starDistance));
+    float apparentStarDiameter = 750 / (starDistance * starDistance);
+    circle(starPosition.x, starPosition.y, apparentStarDiameter);
 
     // Moving the x of star based on z-distance for parallaxEffect
-    starsPosition[i].x = (starsPosition[i].x - pixelsForParallaxEffect(starDistance));
+    starsPosition[i].x -= pixelsForParallaxEffect(starDistance);
 
-    // Done to reset the start back to right side of screen
+    // Done to reset the star back to right side of screen
     if (starsPosition[i].x < 0) {
       starsPosition[i].x += width;
       starsPosition[i].y = random(0, height);
