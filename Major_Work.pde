@@ -7,6 +7,7 @@
 float startButtonWidth = 200, startButtonHeight = 50;
 
 int currentLevel;
+int maxLevel;
 boolean startButtonClicked;
 boolean gameWon;
 boolean gameOver;
@@ -44,8 +45,6 @@ void setup() {
   startButtonClicked = false;
   points = 0;
 
-  // currentLevel is 0, 1 or 2
-  currentLevel = 0;
   gameWon = false;
   gameOver = false;
 
@@ -55,12 +54,16 @@ void setup() {
   pixelsToMove = 5;
 
   moonDiameter = width/4;
-  numMoonsInLevel = new int[] {3, 4, 6};
+  numMoonsInLevel = new int[] {3, 4, 5, 6};
   moonsCenterLocations = new PVector[6];
   moonsHitPreviously = new boolean[6];
   frameNumberForMoonsHit = new float[6];
   moonSpeed = 0.1;
   initializeMoons();
+
+  // currentLevel is 0, 1, 2 or 3
+  currentLevel = 0;
+  maxLevel = numMoonsInLevel.length - 1;
 
   numStars = 150;
   starsSpeed = 10;
@@ -74,7 +77,7 @@ void setup() {
 
 void draw() {
   background(#050608);
-  
+
   // Although this condition is the same as the one later on
   // I have add it here so that the points text is behind the stars.
   if (startButtonClicked && !gameOver) {
@@ -82,7 +85,7 @@ void draw() {
   }
 
   animateStars();
-  
+
   if (!startButtonClicked) {
     drawStartButton();
   }
@@ -90,8 +93,8 @@ void draw() {
   if (startButtonClicked && !gameOver) {
     drawMissile();
     /* drawMoons draws multiple moons and thus it uses the drawMoon func
-       to draw each moon
-    */
+     to draw each moon
+     */
     // drawMoons Function internally uses drawMoon
     drawMoons();
     drawPlayer(playerCenter.x, playerCenter.y);
@@ -181,10 +184,10 @@ void drawStartButton() {
 }
 
 void displayEndScreen(String result) {
-    textSize(120);
-    textAlign(CENTER);
-    fill(255);
-    text(result, width/2, height/2);
+  textSize(120);
+  textAlign(CENTER);
+  fill(255);
+  text(result, width/2, height/2);
 }
 
 //****************************************************************************//
@@ -193,9 +196,9 @@ void displayEndScreen(String result) {
 
 void levelUp() {
   // increase level if there are any left, otherwise the game is won
-  if (currentLevel < 2) {
+  if (currentLevel < maxLevel) {
     currentLevel++;
-    moonSpeed *= 2;
+    moonSpeed *= 1.5;
     initializeMoons();
   } else {
     gameWon = true;
@@ -232,7 +235,7 @@ void drawPlayer(float x, float y) {
   // Moving down
   else if (keyPressed && key == 's') {
     p3.y = y + playerHeight/4;
-   }
+  }
   triangle(p1.x, p1.y, p2.x, p2.y, p3.x, p3.y);
   drawTorchLight(p3.copy().sub(new PVector(x, y)), p3);
 }
@@ -292,7 +295,7 @@ void drawMoon(float x, float y) {
 void drawMoons() {
   for (int i = 0; i < numMoonsInLevel[currentLevel]; i++) {
     PVector currentMoonLocation = moonsCenterLocations[i];
-    
+
     // check if the missile has hit the moon
     if (missileHitMoon(missileLocation, i)) {
       moonsHitPreviously[i] = true;
@@ -301,16 +304,15 @@ void drawMoons() {
       resetMissile();
     }
 
-    // check if the moon hasnt been hit moon previusly
+    // check if the moon hasnt been hit previusly
     // only then draw the moon
     if (!missileHitMoon(missileLocation, i) && !moonsHitPreviously[i]) {
       drawMoon(currentMoonLocation.x, currentMoonLocation.y);
-    } else if (frameCount - frameNumberForMoonsHit[i] < frameRate/5){
+    } else if (frameCount - frameNumberForMoonsHit[i] < frameRate/5) {
       // here it is guranteed that moon is hit 1/5 seconds ago
-      // so explosion is only show for 1/5 seconds after a certain moon is hit
+      // so explosion is only shown for 1/5 seconds after a certain moon is hit
       drawMoonExplosion(currentMoonLocation.x, currentMoonLocation.y);
     }
-
   }
 
   moveMoons();
@@ -322,15 +324,19 @@ void drawMoonExplosion(float x, float y) {
   for (float theta = 0; theta <= 2 * PI; theta += 0.1) {
     float len = random(50, 85);
     strokeWeight(1);
-    gradient_line(c2, c1, x, y, x + len * cos(theta), y + len * sin(theta));
+    gradientLine(c2, c1, x, y, x + len * cos(theta), y + len * sin(theta));
   }
 }
 
-void gradient_line( color s, color e, float x, float y, float x2, float y2 ) {
-  for ( int i = 0; i < 100; i ++ ) {
-    stroke( lerpColor( s, e, i/100.0) );
-    line( ((100-i)*x + i*x2)/100.0, ((100-i)*y + i*y2)/100.0, 
-      ((100-i-1)*x + (i+1)*x2)/100.0, ((100-i-1)*y + (i+1)*y2)/100.0 );
+void gradientLine(color startingColor, color endingColor, float x, float y, float x2, float y2) {
+  for (int i = 0; i < 100; i++) {
+    stroke(lerpColor(startingColor, endingColor, i/100.0));
+    line(
+      ((100-i)*x + i*x2)/100.0,
+      ((100-i)*y + i*y2)/100.0,
+      ((100-i-1)*x + (i+1)*x2)/100.0,
+      ((100-i-1)*y + (i+1)*y2)/100.0
+      );
   }
 }
 
@@ -360,7 +366,6 @@ boolean anyMoonHitShipOrEdge() {
     if (hitPlayer || hitEdge) {
       return true;
     }
-
   }
   return false;
 }
