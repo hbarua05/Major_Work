@@ -27,7 +27,6 @@ float moonDiameter;
 int numStars;
 PVector[] starsPosition;
 float[] starsDistance;
-float starsSpeed;
 
 PVector missileLocation;
 float missileSpeed;
@@ -66,7 +65,6 @@ void setup() {
   maxLevel = numMoonsInLevel.length - 1;
 
   numStars = 150;
-  starsSpeed = 10;
   starsPosition = new PVector[numStars];
   starsDistance = new float[numStars];
   initializeStars();
